@@ -340,7 +340,9 @@ export class GlFeatureBadge extends LitElement {
 				href="${generateCommandLink(Commands.PlusUpgrade, this.source)}"
 				>Upgrade to Pro</gl-button
 			>
-			<p class="special">Special: <b>50% off first seat of Pro</b> — only $4/month!<br /></p>
+			<p class="special">
+				Special: <b>1st seat of GitLens Pro is now 50%+ off.</b> See your special price.<br />
+			</p>
 		</div>`;
 	}
 }
