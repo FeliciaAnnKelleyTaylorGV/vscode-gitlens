@@ -9,6 +9,7 @@ import type {
 	GetRepoInput,
 	GitHub,
 	GitLab,
+	GitMergeStrategy,
 	GitPullRequest,
 	GitRepository,
 	Issue,
@@ -16,6 +17,7 @@ import type {
 	JiraProject,
 	JiraResource,
 	PullRequestWithUniqueID,
+	SetPullRequestInput,
 	Trello,
 } from '@gitkraken/provider-apis';
 import {
@@ -235,6 +237,14 @@ export type GetPullRequestsForAzureProjectsFn = (
 	options?: EnterpriseOptions,
 ) => Promise<{ data: ProviderPullRequest[] }>;
 
+export type MergePullRequestFn = (
+	input: {
+		pullRequest: { headRef: { oid: string | null } | null } & SetPullRequestInput;
+		mergeStrategy?: GitMergeStrategy.Squash;
+	},
+	options?: EnterpriseOptions,
+) => Promise<void>;
+
 export type GetIssueFn = (
 	input: { resourceId: string; number: string },
 	options?: EnterpriseOptions,
@@ -315,6 +325,7 @@ export interface ProviderInfo extends ProviderMetadata {
 	getIssuesForProjectFn?: GetIssuesForProjectFn;
 	getReposForAzureProjectFn?: GetReposForAzureProjectFn;
 	getIssuesForResourceForCurrentUserFn?: GetIssuesForResourceForCurrentUserFn;
+	mergePullRequestFn?: MergePullRequestFn;
 }
 
 export interface ProviderMetadata {
