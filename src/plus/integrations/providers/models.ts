@@ -522,12 +522,14 @@ export function toSearchedIssue(
 			closed: issue.closedDate != null,
 			state: issue.closedDate != null ? 'closed' : 'opened',
 			author: {
+				id: issue.author.id ?? '',
 				name: issue.author.name ?? '',
 				avatarUrl: issue.author.avatarUrl ?? undefined,
 				url: issue.author.url ?? undefined,
 			},
 			assignees:
 				issue.assignees?.map(assignee => ({
+					id: assignee.id ?? '',
 					name: assignee.name ?? '',
 					avatarUrl: assignee.avatarUrl ?? undefined,
 					url: assignee.url ?? undefined,
@@ -560,6 +562,7 @@ export function issueFilterToReason(filter: IssueFilter): 'authored' | 'assigned
 export function toAccount(account: ProviderAccount, provider: ProviderReference): UserAccount {
 	return {
 		provider: provider,
+		id: account.id,
 		name: account.name ?? undefined,
 		email: account.email ?? undefined,
 		avatarUrl: account.avatarUrl ?? undefined,
@@ -803,7 +806,7 @@ export function fromProviderPullRequest(pr: ProviderPullRequest, integration: In
 		{
 			owner: pr.repository.owner.login,
 			repo: pr.repository.name,
-			// This a dirty hack that's needed to enable PRs original pr does not have this information
+			// This has to be here until we can take this information from ProviderPullRequest:
 			accessLevel: RepositoryAccessLevel.Write,
 		},
 		fromProviderPullRequestState(pr.state),
@@ -860,18 +863,19 @@ export function toProviderPullRequestWithUniqueId(pr: PullRequest): PullRequestW
 
 export function toProviderAccount(account: PullRequestMember | IssueMember): ProviderAccount {
 	return {
+		id: account.id ?? null,
 		avatarUrl: account.avatarUrl ?? null,
 		name: account.name ?? null,
 		url: account.url ?? null,
 		// TODO: Implement these in our own model
 		email: '',
 		username: account.name ?? null,
-		id: account.name ?? null,
 	};
 }
 
 export function fromProviderAccount(account: ProviderAccount | null): PullRequestMember | IssueMember {
 	return {
+		id: account?.id ?? '',
 		name: account?.name ?? 'unknown',
 		avatarUrl: account?.avatarUrl ?? undefined,
 		url: account?.url ?? '',
