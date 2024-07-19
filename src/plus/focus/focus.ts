@@ -1,9 +1,11 @@
-import type { QuickPick } from 'vscode';
+import type { QuickPick, QuickPickItem } from 'vscode';
 import { commands, Uri } from 'vscode';
 import { getAvatarUri } from '../../avatars';
 import type {
 	PartialStepState,
 	StepGenerator,
+	StepItemType,
+	StepResult,
 	StepResultGenerator,
 	StepSelection,
 	StepState,
@@ -16,6 +18,7 @@ import {
 	StepResultBreak,
 } from '../../commands/quickCommand';
 import {
+	ConnectIntegrationButton,
 	FeedbackQuickInputButton,
 	getIntegrationTitle,
 	getOpenOnGitproviderQuickInputButtons,
@@ -83,6 +86,20 @@ const actionGroupMap = new Map<FocusActionCategory, string[]>([
 
 export interface FocusItemQuickPickItem extends QuickPickItemOfT<FocusItem> {
 	group: FocusGroup;
+}
+
+type ConnectMoreIntegrationsItem = QuickPickItem & {
+	item: undefined;
+	group: undefined;
+};
+const connectMoreIntegrationsItem: ConnectMoreIntegrationsItem = {
+	label: 'Connect more integrations',
+	detail: 'Connect integration with more Git providers',
+	item: undefined,
+	group: undefined,
+};
+function isConnectMoreIntegrationsItem(item: unknown): item is ConnectMoreIntegrationsItem {
+	return item === connectMoreIntegrationsItem;
 }
 
 interface Context {
@@ -267,6 +284,28 @@ export class FocusCommand extends QuickCommand<State> {
 				});
 				if (result === StepResultBreak) continue;
 
+				if (isConnectMoreIntegrationsItem(result)) {
+					const connectingResult = yield* this.confirmIntegrationConnectStep(state, context);
+					if (
+						connectingResult !== StepResultBreak &&
+						!(await this.ensureIntegrationConnected(connectingResult))
+					) {
+						let integration;
+						switch (connectingResult) {
+							case HostingIntegrationId.GitHub:
+								integration = 'GitHub';
+								break;
+							default:
+								integration = `integration (${connectingResult})`;
+								break;
+						}
+						throw new Error(`Unable to connect to ${integration}`);
+					}
+					newlyConnected = connectingResult !== StepResultBreak;
+					await updateContextItems(this.container, context, { force: newlyConnected });
+					continue;
+				}
+
 				state.item = result;
 			}
 
@@ -335,9 +374,9 @@ export class FocusCommand extends QuickCommand<State> {
 		state: StepState<State>,
 		context: Context,
 		{ picked, selectTopItem }: { picked?: string; selectTopItem?: boolean },
-	): StepResultGenerator<GroupedFocusItem> {
+	): StepResultGenerator<GroupedFocusItem | ConnectMoreIntegrationsItem> {
 		const getItems = (result: FocusCategorizedResult) => {
-			const items: (FocusItemQuickPickItem | DirectiveQuickPickItem)[] = [];
+			const items: (FocusItemQuickPickItem | DirectiveQuickPickItem | ConnectMoreIntegrationsItem)[] = [];
 
 			if (result.items?.length) {
 				const uiGroups = groupAndSortFocusItems(result.items);
@@ -392,9 +431,9 @@ export class FocusCommand extends QuickCommand<State> {
 						...groupItems.map(i => {
 							const buttons = [];
 
-							if (i.actionableCategory === 'mergeable') {
-								buttons.push(MergeQuickInputButton);
-							}
+							// if (i.actionableCategory === 'mergeable') {
+							buttons.push(MergeQuickInputButton);
+							// }
 
 							buttons.push(
 								i.viewer.pinned ? UnpinQuickInputButton : PinQuickInputButton,
@@ -431,7 +470,7 @@ export class FocusCommand extends QuickCommand<State> {
 					);
 				}
 			}
-
+			items.push(createQuickPickSeparator(undefined), connectMoreIntegrationsItem);
 			return items;
 		};
 
@@ -456,7 +495,9 @@ export class FocusCommand extends QuickCommand<State> {
 			};
 		}
 
-		const updateItems = async (quickpick: QuickPick<FocusItemQuickPickItem | DirectiveQuickPickItem>) => {
+		const updateItems = async (
+			quickpick: QuickPick<FocusItemQuickPickItem | DirectiveQuickPickItem | ConnectMoreIntegrationsItem>,
+		) => {
 			quickpick.busy = true;
 
 			try {
@@ -478,6 +519,7 @@ export class FocusCommand extends QuickCommand<State> {
 			matchOnDetail: true,
 			items: items,
 			buttons: [
+				ConnectIntegrationButton,
 				FeedbackQuickInputButton,
 				OpenOnWebQuickInputButton,
 				LaunchpadSettingsQuickInputButton,
@@ -508,6 +550,8 @@ export class FocusCommand extends QuickCommand<State> {
 			},
 
 			onDidClickItemButton: async (quickpick, button, { group, item }) => {
+				if (!item) return;
+
 				switch (button) {
 					case OpenOnGitHubQuickInputButton:
 					case OpenOnGitLabQuickInputButton:
@@ -551,9 +595,12 @@ export class FocusCommand extends QuickCommand<State> {
 		});
 
 		const selection: StepSelection<typeof step> = yield step;
-		return canPickStepContinue(step, state, selection)
-			? { ...selection[0].item, group: selection[0].group }
-			: StepResultBreak;
+		const can = canPickStepContinue(step, state, selection);
+		if (!can) return StepResultBreak;
+		const s: StepItemType<typeof step> = selection;
+		const i = s[0];
+		if (isConnectMoreIntegrationsItem(i)) return i;
+		return { ...i.item, group: i.group };
 	}
 
 	private *confirmStep(
