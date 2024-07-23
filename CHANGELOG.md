@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixes running unit tests and improves eslint configuration
+
 ### Added
 
 - Adds support for OpenAI's GPT-4o Mini model for GitLens' experimental AI features
