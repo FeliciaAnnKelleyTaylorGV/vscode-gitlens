@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixes [#3350](https://github.com/gitkraken/vscode-gitlens/issues/3350) - Adds stash commit message to commit graph row
+- Fixes [#3385](https://github.com/gitkraken/vscode-gitlens/issues/3385) - Provides commit from stash on create patch from stash action
+
 ### Added
 
 - Adds support for OpenAI's GPT-4o Mini model for GitLens' experimental AI features
