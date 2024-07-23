@@ -9,7 +9,6 @@ import type { PullRequest } from '../../git/models/pullRequest';
 import { isSha, isUncommitted, shortenRevision } from '../../git/models/reference';
 import { isRepository, Repository } from '../../git/models/repository';
 import type { GitUser } from '../../git/models/user';
-import { AzureDevOpsRemote } from '../../git/remotes/azure-devops';
 import { getRemoteProviderMatcher } from '../../git/remotes/remoteProviders';
 import type {
 	CodeSuggestionCounts,
